@@ -1153,31 +1153,51 @@ function loadDemo(){
 }
 
 /* ─── SYNC ─── */
-async function syncSheets(silent){
+function syncSheets(silent){
   if(!S.sheetUrl&&!S.demo){toast('No Sheets URL — open setup to connect');return;}
   if(S.demo){if(!silent)toast('Demo mode — connect Google Sheets to save for real!');return;}
   const lbl=document.getElementById('syncLbl');
   if(lbl)lbl.textContent='Syncing…';
-  try{
-    // Use GET + payload param to avoid CORS block on POST from GitHub Pages
-    const payload=encodeURIComponent(JSON.stringify({...S,syncedAt:new Date().toISOString()}));
-    const url=S.sheetUrl+'?payload='+payload;
-    const res=await fetch(url,{method:'GET',mode:'cors'});
-    const json=await res.json();
-    if(json.status==='ok'){
+
+  // JSONP approach — only way to get response from Apps Script cross-domain
+  const cbName='_cb'+Date.now();
+  const payload=encodeURIComponent(JSON.stringify({...S,syncedAt:new Date().toISOString()}));
+  const url=S.sheetUrl+'?callback='+cbName+'&payload='+payload;
+
+  window[cbName]=function(json){
+    delete window[cbName];
+    document.head.removeChild(script);
+    clearTimeout(timer);
+    if(json && json.status==='ok'){
       const t=new Date();
       const ts=String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');
       if(lbl)lbl.textContent='Synced '+ts;
       if(!silent)toast('Saved to Google Sheets ✓');
       setTimeout(()=>{if(lbl)lbl.textContent='Sync';},8000);
     } else {
-      throw new Error(json.message||'Unknown error');
+      if(lbl)lbl.textContent='Sync';
+      if(!silent)toast('Sync failed — redeploy your script');
     }
-  }catch(e){
+  };
+
+  const script=document.createElement('script');
+  script.src=url;
+  script.onerror=function(){
+    delete window[cbName];
+    clearTimeout(timer);
     if(lbl)lbl.textContent='Sync';
     if(!silent)toast('Sync failed — check your URL');
-    console.error('Sync error:',e);
-  }
+  };
+  document.head.appendChild(script);
+
+  // timeout after 10s
+  const timer=setTimeout(function(){
+    if(window[cbName]){
+      delete window[cbName];
+      if(lbl)lbl.textContent='Sync';
+      if(!silent)toast('Sync timed out');
+    }
+  },10000);
 }
 /* auto-sync every 3 minutes */
 setInterval(()=>syncSheets(true), 3*60*1000);
