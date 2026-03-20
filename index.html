@@ -813,10 +813,42 @@ function init(){
   document.getElementById('ynTitle').textContent='Focus Board '+now.getFullYear();
   setYear();
   tick();setInterval(tick,1000);
-  if(S.sheetUrl||S.demo) document.getElementById('setup').classList.add('gone');
+  if(S.sheetUrl||S.demo){
+    document.getElementById('setup').classList.add('gone');
+    // Load latest data from Sheets so any device gets up to date data
+    if(S.sheetUrl) loadFromSheets();
+  }
   renderFocus();
   renderYearGrid();
   updateStats();
+}
+
+/* ─── LOAD FROM SHEETS ─── */
+function loadFromSheets(){
+  const cbName='_load'+Date.now();
+  const url=S.sheetUrl+'?callback='+cbName+'&action=load';
+  window[cbName]=function(json){
+    delete window[cbName];
+    document.head.removeChild(script);
+    if(json && json.status==='ok' && json.data && Object.keys(json.data).length>0){
+      // Merge — Sheets is the source of truth
+      const remote=json.data;
+      S.goals=remote.goals||S.goals;
+      S.tasks=remote.tasks||S.tasks;
+      S.focus=remote.focus||S.focus;
+      save();
+      renderFocus();
+      renderYearGrid();
+      updateStats();
+      const lbl=document.getElementById('syncLbl');
+      if(lbl)lbl.textContent='Loaded ✓';
+      setTimeout(()=>{if(lbl)lbl.textContent='Sync';},3000);
+    }
+  };
+  const script=document.createElement('script');
+  script.src=url;
+  script.onerror=function(){ delete window[cbName]; };
+  document.head.appendChild(script);
 }
 
 function save(){localStorage.setItem('fb5',JSON.stringify(S));updateStats();}
