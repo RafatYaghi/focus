@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Focus Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#f5f5f7;
+  --white:#ffffff;
+  --card:#ffffff;
+  --a:#0071e3;
+  --a-soft:rgba(0,113,227,0.08);
+  --a-mid:rgba(0,113,227,0.15);
+  --text:#1d1d1f;
+  --sub:#6e6e73;
+  --muted:#aeaeb2;
+  --border:rgba(0,0,0,0.06);
+  --border-strong:rgba(0,0,0,0.11);
+  --green:#34c759;
+  --orange:#ff9f0a;
+  --purple:#bf5af2;
+  --r:16px;
+  --r-lg:22px;
+  --r-xl:28px;
+}
+
+html,body{
+  width:100vw;height:100vh;overflow:hidden;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  background:var(--bg);color:var(--text);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ─── PAGE TRANSITIONS ─── */
+.page{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  opacity:0;pointer-events:none;
+  transform:translateX(32px);
+  transition:opacity 0.32s cubic-bezier(.4,0,.2,1),transform 0.32s cubic-bezier(.4,0,.2,1);
+}
+.page.active{opacity:1;pointer-events:all;transform:translateX(0);}
+.page.exit-left{opacity:0;transform:translateX(-32px);}
+
+/* ─── NAV BAR ─── */
+.nav{
+  height:52px;flex-shrink:0;
+  background:rgba(245,245,247,0.82);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-bottom:0.5px solid var(--border-strong);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;position:relative;z-index:10;
+}
+.nav-back{
+  display:flex;align-items:center;gap:5px;
+  color:var(--a);font-size:16px;font-weight:500;
+  background:none;border:none;cursor:pointer;font-family:inherit;padding:0;
+  transition:opacity 0.15s;
+}
+.nav-back:hover{opacity:0.7;}
+.nav-back svg{margin-right:1px}
+.nav-center{
+  position:absolute;left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  font-size:16px;font-weight:600;color:var(--text);
+  white-space:nowrap;pointer-events:none;
+}
+.nav-action{
+  color:var(--a);font-size:15px;font-weight:600;
+  background:none;border:none;cursor:pointer;
+  font-family:inherit;padding:0;
+  transition:opacity 0.15s;
+}
+.nav-action:hover{opacity:0.7;}
+
+/* ─── YEAR PAGE ─── */
+#pgYear{background:var(--bg);}
+
+.year-layout{
+  flex:1;display:grid;
+  grid-template-columns:300px 1fr;
+  gap:0;overflow:hidden;
+}
+
+/* LEFT PANEL */
+.left-panel{
+  border-right:0.5px solid var(--border-strong);
+  display:flex;flex-direction:column;
+  padding:24px 20px;gap:16px;
+  overflow:hidden;background:var(--white);
+}
+
+/* CLOCK WIDGET */
+.clock-widget{
+  background:var(--text);
+  border-radius:var(--r-lg);
+  padding:22px 24px;
+  flex-shrink:0;
+}
+.cw-time{
+  font-size:54px;font-weight:200;
+  letter-spacing:-3px;color:#fff;
+  line-height:1;font-variant-numeric:tabular-nums;
+}
+.cw-time span{font-size:30px;opacity:0.5;font-weight:300;}
+.cw-date{
+  font-size:14px;color:rgba(255,255,255,0.5);
+  margin-top:6px;font-weight:400;
+}
+.cw-day{
+  font-size:20px;font-weight:600;color:rgba(255,255,255,0.85);
+  margin-top:2px;
+}
+
+/* YEAR PROGRESS WIDGET */
+.yr-widget{
+  background:var(--bg);
+  border-radius:var(--r);
+  padding:16px 18px;flex-shrink:0;
+}
+.yr-w-top{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;
+}
+.yr-w-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;}
+.yr-w-pct{font-size:22px;font-weight:700;color:var(--a);}
+.yr-track{height:6px;background:rgba(0,0,0,0.08);border-radius:100px;overflow:hidden;}
+.yr-fill{height:100%;background:linear-gradient(90deg,var(--a),#34aadc);border-radius:100px;transition:width 1.4s cubic-bezier(.4,0,.2,1);}
+.yr-days{font-size:12px;color:var(--muted);margin-top:7px;}
+
+/* STATS ROW */
+.stats-row{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;flex-shrink:0;
+}
+.stat-pill{
+  background:var(--bg);border-radius:var(--r);
+  padding:14px 16px;
+}
+.sp-num{font-size:26px;font-weight:700;line-height:1;margin-bottom:3px;}
+.sp-lbl{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;}
+
+/* FOCUS CARD */
+.focus-widget{
+  flex:1;
+  background:linear-gradient(135deg,#e8f4fd 0%,#f0e8ff 100%);
+  border-radius:var(--r);
+  padding:18px;
+  display:flex;flex-direction:column;gap:10px;
+  min-height:0;
+}
+.fw-label{font-size:11px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:var(--a);}
+.fw-text{
+  font-size:17px;font-weight:600;color:var(--text);
+  line-height:1.4;flex:1;
+}
+.fw-placeholder{color:var(--muted);font-weight:400;font-size:15px;}
+.fw-input-row{display:flex;gap:8px;}
+.fw-input{
+  flex:1;background:rgba(255,255,255,0.8);
+  border:1.5px solid rgba(0,113,227,0.2);
+  border-radius:10px;color:var(--text);
+  font-family:inherit;font-size:14px;font-weight:500;
+  padding:9px 12px;outline:none;
+}
+.fw-input:focus{border-color:var(--a);background:#fff;}
+.fw-input::placeholder{color:var(--muted);}
+.fw-btn{
+  background:var(--a);border:none;border-radius:10px;
+  color:#fff;font-family:inherit;font-size:13px;
+  font-weight:700;padding:0 16px;cursor:pointer;
+  transition:opacity 0.15s;
+}
+.fw-btn:hover{opacity:0.85;}
+.fw-edit{font-size:12px;color:var(--a);cursor:pointer;font-weight:600;opacity:0.7;}
+.fw-edit:hover{opacity:1;}
+
+/* RIGHT — MONTHS GRID */
+.months-area{
+  padding:24px;overflow:hidden;
+  display:flex;flex-direction:column;gap:16px;
+}
+.months-header{
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.yr-big{font-size:32px;font-weight:700;letter-spacing:-0.5px;}
+.add-goal-top{
+  background:var(--a);color:#fff;border:none;
+  border-radius:100px;padding:8px 20px;
+  font-size:14px;font-weight:600;cursor:pointer;
+  font-family:inherit;transition:opacity 0.15s;
+}
+.add-goal-top:hover{opacity:0.85;}
+
+.months-grid{
+  flex:1;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  grid-template-rows:repeat(3,1fr);
+  gap:12px;
+  overflow:hidden;
+}
+
+.mc{
+  background:var(--card);
+  border-radius:var(--r);
+  padding:16px;
+  cursor:pointer;
+  border:1.5px solid var(--border);
+  transition:all 0.2s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;gap:0;
+  overflow:hidden;position:relative;
+}
+.mc:hover{border-color:var(--a);box-shadow:0 6px 28px rgba(0,113,227,0.1);transform:translateY(-2px);}
+.mc.now{border-color:var(--a);background:linear-gradient(135deg,#fff 60%,#eef6ff);}
+.mc.now::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--a),#34aadc);border-radius:2px 2px 0 0;
+}
+.mc.past{opacity:0.55;}
+
+.mc-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
+.mc-name{font-size:15px;font-weight:700;color:var(--text);}
+.mc.now .mc-name{color:var(--a);}
+.mc-count{
+  font-size:11px;font-weight:600;
+  background:var(--bg);color:var(--muted);
+  padding:2px 8px;border-radius:100px;
+}
+.mc.now .mc-count{background:var(--a-soft);color:var(--a);}
+
+.mc-pills{display:flex;flex-direction:column;gap:5px;flex:1;}
+.mc-pill{
+  font-size:11px;font-weight:500;
+  padding:4px 9px;border-radius:100px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.mc-pill.work{background:rgba(255,159,10,0.12);color:#c67600;}
+.mc-pill.personal{background:rgba(191,90,242,0.12);color:#8e44b8;}
+.mc-pill.health{background:rgba(52,199,89,0.12);color:#1e7c3a;}
+.mc-pill.done{background:rgba(0,0,0,0.05);color:var(--muted);text-decoration:line-through;}
+.mc-none{font-size:12px;color:var(--muted);font-style:italic;}
+
+.mc-prog{
+  height:3px;background:rgba(0,0,0,0.06);
+  border-radius:100px;overflow:hidden;margin-top:10px;
+}
+.mc-prog-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--a),#34aadc);}
+
+/* ─── MONTH PAGE ─── */
+#pgMonth{background:var(--bg);}
+.month-body{flex:1;display:grid;grid-template-columns:1fr 340px;overflow:hidden;gap:0;}
+
+/* CAL SIDE */
+.cal-side{
+  overflow-y:auto;padding:24px;
+  display:flex;flex-direction:column;gap:20px;
+}
+.cal-side::-webkit-scrollbar{display:none;}
+
+.month-banner{
+  background:var(--white);border-radius:var(--r-lg);
+  padding:24px 28px;
+  display:flex;align-items:flex-end;justify-content:space-between;
+}
+.mb-left{}
+.mb-month{font-size:36px;font-weight:800;letter-spacing:-1px;line-height:1;}
+.mb-sub{font-size:14px;color:var(--sub);margin-top:4px;font-weight:400;}
+.mb-right{text-align:right;}
+.mb-pct{font-size:36px;font-weight:700;color:var(--a);line-height:1;}
+.mb-pct-lbl{font-size:12px;color:var(--muted);font-weight:500;}
+
+/* CALENDAR */
+.cal-card{
+  background:var(--white);border-radius:var(--r-lg);
+  overflow:hidden;
+}
+.cal-dow{
+  display:grid;grid-template-columns:repeat(7,1fr);
+  padding:12px 8px 8px;
+  border-bottom:0.5px solid var(--border);
+}
+.cal-dow-lbl{
+  text-align:center;font-size:11px;font-weight:700;
+  color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;
+}
+.cal-weeks{padding:8px;}
+.cal-week{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px;}
+.cal-day{
+  aspect-ratio:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  border-radius:10px;cursor:pointer;
+  transition:background 0.15s;position:relative;
+  gap:3px;
+}
+.cal-day:hover:not(.empty){background:var(--bg);}
+.cal-day.today .d-num{
+  background:var(--a);color:#fff;
+  width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+}
+.cal-day.has-dot::after{
+  content:'';position:absolute;bottom:4px;
+  width:4px;height:4px;border-radius:50%;background:var(--a);
+}
+.d-num{font-size:14px;font-weight:500;color:var(--text);line-height:1;}
+.cal-day.other .d-num{color:var(--muted);opacity:0.4;}
+.cal-day.empty{cursor:default;}
+
+/* GOALS SIDE */
+.goals-side{
+  border-left:0.5px solid var(--border-strong);
+  background:var(--white);
+  overflow-y:auto;
+  padding:24px 20px;
+  display:flex;flex-direction:column;gap:0;
+}
+.goals-side::-webkit-scrollbar{display:none;}
+.gs-title{
+  font-size:20px;font-weight:700;margin-bottom:16px;letter-spacing:-0.3px;
+}
+.goal-item{
+  padding:14px 0;
+  border-bottom:0.5px solid var(--border);
+  cursor:pointer;transition:opacity 0.15s;
+}
+.goal-item:last-of-type{border-bottom:none;}
+.goal-item:hover{opacity:0.7;}
+.gi-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.gi-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;
+}
+.gi-name{
+  font-size:15px;font-weight:600;color:var(--text);
+  flex:1;line-height:1.3;
+}
+.gi-name.done{text-decoration:line-through;color:var(--muted);}
+.gi-check{
+  width:22px;height:22px;border-radius:50%;
+  border:2px solid var(--border-strong);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;color:#fff;flex-shrink:0;
+  transition:all 0.2s;
+}
+.gi-check.done{background:var(--green);border-color:var(--green);}
+.gi-cat{font-size:12px;color:var(--muted);font-weight:500;margin-bottom:7px;padding-left:18px;}
+.gi-bar{display:flex;align-items:center;gap:8px;padding-left:18px;}
+.gi-track{flex:1;height:4px;background:var(--bg);border-radius:100px;overflow:hidden;}
+.gi-fill{height:100%;border-radius:100px;}
+.gi-pct{font-size:12px;font-weight:700;color:var(--sub);min-width:32px;text-align:right;}
+
+.gs-add-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin-top:14px;padding:13px;
+  border:1.5px dashed var(--border-strong);
+  border-radius:var(--r);color:var(--a);
+  font-size:14px;font-weight:600;cursor:pointer;
+  background:none;width:100%;font-family:inherit;
+  transition:all 0.15s;
+}
+.gs-add-btn:hover{background:var(--a-soft);border-color:var(--a);}
+
+/* ─── DAY PAGE ─── */
+#pgDay{background:var(--bg);}
+.day-body{flex:1;display:grid;grid-template-columns:1fr 360px;overflow:hidden;}
+
+/* TASKS SIDE */
+.tasks-side{
+  overflow-y:auto;padding:28px;
+  display:flex;flex-direction:column;gap:20px;
+}
+.tasks-side::-webkit-scrollbar{display:none;}
+
+.day-banner{
+  background:var(--white);border-radius:var(--r-lg);
+  padding:24px 28px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.db-left{}
+.db-num{font-size:52px;font-weight:800;letter-spacing:-3px;line-height:1;color:var(--text);}
+.db-month{font-size:18px;font-weight:600;color:var(--sub);margin-top:2px;}
+.db-right{text-align:right;}
+.db-day{font-size:28px;font-weight:700;color:var(--text);letter-spacing:-0.5px;}
+.db-time-live{font-size:15px;color:var(--muted);margin-top:4px;font-variant-numeric:tabular-nums;}
+
+/* ADD INPUT */
+.add-wrap{
+  background:var(--white);border-radius:var(--r);
+  display:flex;overflow:hidden;
+  border:1.5px solid var(--border);
+  transition:border-color 0.2s;
+}
+.add-wrap:focus-within{border-color:var(--a);}
+.add-inp{
+  flex:1;padding:15px 18px;background:transparent;
+  border:none;outline:none;font-size:16px;
+  font-family:inherit;color:var(--text);
+}
+.add-inp::placeholder{color:var(--muted);}
+.add-go{
+  background:var(--a);border:none;
+  color:#fff;padding:15px 20px;
+  font-size:15px;font-weight:700;
+  cursor:pointer;font-family:inherit;
+  transition:opacity 0.15s;
+}
+.add-go:hover{opacity:0.85;}
+
+/* TASK LIST */
+.tasks-card{
+  background:var(--white);border-radius:var(--r-lg);
+  overflow:hidden;
+}
+.task-row{
+  display:flex;align-items:center;gap:14px;
+  padding:16px 20px;
+  border-bottom:0.5px solid var(--border);
+  cursor:pointer;transition:background 0.15s;
+}
+.task-row:last-child{border-bottom:none;}
+.task-row:hover{background:var(--bg);}
+.tc{
+  width:24px;height:24px;border-radius:50%;
+  border:2px solid var(--border-strong);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;color:#fff;flex-shrink:0;
+  transition:all 0.2s;
+}
+.tc.on{background:var(--green);border-color:var(--green);}
+.tl{flex:1;font-size:16px;font-weight:500;color:var(--text);line-height:1.3;}
+.tl.done{text-decoration:line-through;color:var(--muted);}
+.tdel{
+  background:none;border:none;color:var(--muted);
+  font-size:20px;cursor:pointer;font-family:inherit;
+  opacity:0;transition:opacity 0.15s;padding:0 4px;
+}
+.task-row:hover .tdel{opacity:1;}
+
+.tasks-empty{
+  padding:32px 20px;text-align:center;
+  font-size:15px;color:var(--muted);
+}
+
+/* DAY GOALS PANEL */
+.day-goals-panel{
+  border-left:0.5px solid var(--border-strong);
+  background:var(--white);overflow-y:auto;
+  padding:24px 20px;
+}
+.day-goals-panel::-webkit-scrollbar{display:none;}
+.dgp-title{font-size:18px;font-weight:700;margin-bottom:16px;letter-spacing:-0.3px;}
+
+/* ─── GOAL MODAL ─── */
+.shade{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.35);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  z-index:100;display:none;
+  align-items:flex-end;justify-content:center;
+  padding-bottom:0;
+}
+.shade.open{display:flex;}
+.sheet{
+  background:var(--white);
+  border-radius:28px 28px 0 0;
+  width:100%;max-width:560px;
+  padding:32px 28px 48px;
+  animation:up 0.34s cubic-bezier(.4,0,.2,1);
+}
+@keyframes up{from{transform:translateY(120%)}to{transform:translateY(0)}}
+.sheet-handle{
+  width:40px;height:4px;border-radius:100px;
+  background:var(--border-strong);margin:0 auto 24px;
+}
+.sheet-title{font-size:22px;font-weight:700;margin-bottom:22px;letter-spacing:-0.3px;}
+.sf{margin-bottom:16px;}
+.sl{
+  display:block;font-size:12px;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.07em;
+  color:var(--muted);margin-bottom:7px;
+}
+.si,.ss{
+  width:100%;padding:14px 16px;
+  background:var(--bg);border:none;border-radius:var(--r);
+  font-size:16px;font-family:inherit;color:var(--text);outline:none;
+  transition:box-shadow 0.2s;
+}
+.si:focus,.ss:focus{box-shadow:0 0 0 3px var(--a-mid);}
+.rr{display:flex;align-items:center;gap:12px;}
+.rr input[type=range]{flex:1;accent-color:var(--a);cursor:pointer;height:5px;}
+.rv{font-size:18px;font-weight:700;color:var(--a);min-width:48px;}
+.s-actions{display:flex;gap:10px;margin-top:24px;}
+.s-cancel{
+  flex:1;background:var(--bg);border:none;
+  color:var(--a);padding:15px;border-radius:var(--r);
+  font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;
+}
+.s-save{
+  flex:2;background:var(--a);border:none;
+  color:#fff;padding:15px;border-radius:var(--r);
+  font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;
+}
+.s-delete{
+  padding:15px 20px;background:rgba(255,59,48,0.1);
+  border:none;border-radius:var(--r);
+  color:#ff3b30;font-size:14px;font-weight:600;
+  cursor:pointer;font-family:inherit;
+}
+
+/* ─── SETUP ─── */
+.setup{
+  position:fixed;inset:0;background:var(--white);
+  z-index:200;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:40px;gap:20px;
+}
+.setup.gone{display:none;}
+.su-mark{font-size:64px;line-height:1;}
+.su-h{font-size:32px;font-weight:800;letter-spacing:-1px;text-align:center;}
+.su-p{font-size:16px;color:var(--sub);text-align:center;max-width:360px;line-height:1.6;}
+.su-box{
+  background:var(--bg);border-radius:var(--r-xl);
+  padding:28px;width:100%;max-width:420px;
+}
+.su-steps{display:flex;flex-direction:column;gap:14px;margin-bottom:22px;}
+.su-step{display:flex;gap:12px;align-items:flex-start;}
+.su-n{
+  width:26px;height:26px;border-radius:50%;
+  background:var(--a);color:#fff;font-size:13px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
+}
+.su-t{font-size:14px;color:var(--sub);line-height:1.55;}
+.su-t a{color:var(--a);font-weight:600;text-decoration:none;}
+.su-url{
+  width:100%;padding:14px 16px;
+  background:var(--white);border:1.5px solid var(--border-strong);
+  border-radius:var(--r);font-size:15px;font-family:inherit;
+  color:var(--text);outline:none;margin-bottom:12px;
+}
+.su-url:focus{border-color:var(--a);}
+.su-btns{display:flex;gap:10px;}
+.su-demo{
+  flex:1;background:var(--white);
+  border:1.5px solid var(--border-strong);color:var(--sub);
+  padding:14px;border-radius:var(--r);
+  font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;
+}
+.su-go{
+  flex:2;background:var(--a);border:none;color:#fff;
+  padding:14px;border-radius:var(--r);
+  font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;
+}
+
+/* ─── TOAST ─── */
+.toast{
+  position:fixed;bottom:28px;left:50%;
+  transform:translateX(-50%) translateY(12px);
+  background:rgba(29,29,31,0.9);
+  backdrop-filter:blur(20px);color:#fff;
+  padding:13px 24px;border-radius:100px;
+  font-size:14px;font-weight:600;
+  z-index:999;opacity:0;
+  transition:all 0.28s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div class="setup" id="setup">
+  <div class="su-mark">🎯</div>
+  <div class="su-h">Focus Board</div>
+  <div class="su-p">Your whole year, every goal, every day — always on screen and always clear.</div>
+  <div class="su-box">
+    <div class="su-steps">
+      <div class="su-step"><div class="su-n">1</div><div class="su-t">Go to <a href="https://script.google.com" target="_blank">script.google.com</a> → New Project → paste the <strong>script.js</strong> code</div></div>
+      <div class="su-step"><div class="su-n">2</div><div class="su-t">Deploy → Web app → Anyone → Authorise → copy the URL</div></div>
+      <div class="su-step"><div class="su-n">3</div><div class="su-t">Paste your URL below and tap Connect</div></div>
+    </div>
+    <input class="su-url" id="sheetUrl" placeholder="https://script.google.com/macros/s/..."/>
+    <div class="su-btns">
+      <button class="su-demo" onclick="loadDemo()">Try Demo</button>
+      <button class="su-go" onclick="connectSheet()">Connect →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ YEAR PAGE ═══ -->
+<div class="page active" id="pgYear">
+  <div class="nav">
+    <div></div>
+    <div class="nav-center" id="ynTitle">Focus Board</div>
+    <button class="nav-action" onclick="openGoalModal(null)">+ Goal</button>
+  </div>
+  <div class="year-layout">
+
+    <!-- LEFT -->
+    <div class="left-panel">
+
+      <div class="clock-widget">
+        <div class="cw-time" id="cwTime">00<span>:00</span></div>
+        <div class="cw-day" id="cwDay">Monday</div>
+        <div class="cw-date" id="cwDate">1 January 2025</div>
+      </div>
+
+      <div class="yr-widget">
+        <div class="yr-w-top">
+          <div class="yr-w-label">Year Progress</div>
+          <div class="yr-w-pct" id="yrPct">0%</div>
+        </div>
+        <div class="yr-track"><div class="yr-fill" id="yrFill" style="width:0%"></div></div>
+        <div class="yr-days" id="yrDays"></div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-pill">
+          <div class="sp-num" style="color:var(--a)" id="stGoals">0</div>
+          <div class="sp-lbl">Goals</div>
+        </div>
+        <div class="stat-pill">
+          <div class="sp-num" style="color:var(--green)" id="stDone">0</div>
+          <div class="sp-lbl">Done</div>
+        </div>
+      </div>
+
+      <div class="focus-widget">
+        <div class="fw-label">Month Focus</div>
+        <div class="fw-text" id="fwText"><span class="fw-placeholder">What matters most this month?</span></div>
+        <div class="fw-input-row" id="fwRow">
+          <input class="fw-input" id="fwIn" placeholder="Set your focus..."/>
+          <button class="fw-btn" onclick="setFocus()">Set</button>
+        </div>
+        <span class="fw-edit" id="fwEdit" style="display:none" onclick="editFocus()">Edit focus</span>
+      </div>
+
+    </div>
+
+    <!-- RIGHT -->
+    <div class="months-area">
+      <div class="months-header">
+        <div class="yr-big" id="yrBig">2025</div>
+        <button class="add-goal-top" onclick="openGoalModal(null)">+ Add Goal</button>
+      </div>
+      <div class="months-grid" id="monthsGrid"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ MONTH PAGE ═══ -->
+<div class="page" id="pgMonth">
+  <div class="nav">
+    <button class="nav-back" onclick="navBack('pgYear','pgMonth')">
+      <svg width="9" height="15" viewBox="0 0 9 15" fill="none"><path d="M8 1L1.5 7.5L8 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span id="mBackLbl">Year</span>
+    </button>
+    <div class="nav-center" id="mNavTitle"></div>
+    <button class="nav-action" onclick="openGoalModal(curMonth)">+ Goal</button>
+  </div>
+  <div class="month-body">
+
+    <div class="cal-side">
+      <div class="month-banner">
+        <div class="mb-left">
+          <div class="mb-month" id="mbMonth"></div>
+          <div class="mb-sub" id="mbSub"></div>
+        </div>
+        <div class="mb-right">
+          <div class="mb-pct" id="mbPct">—</div>
+          <div class="mb-pct-lbl">avg progress</div>
+        </div>
+      </div>
+      <div class="cal-card">
+        <div class="cal-dow">
+          <div class="cal-dow-lbl">Mon</div><div class="cal-dow-lbl">Tue</div>
+          <div class="cal-dow-lbl">Wed</div><div class="cal-dow-lbl">Thu</div>
+          <div class="cal-dow-lbl">Fri</div><div class="cal-dow-lbl">Sat</div>
+          <div class="cal-dow-lbl">Sun</div>
+        </div>
+        <div class="cal-weeks" id="calWeeks"></div>
+      </div>
+    </div>
+
+    <div class="goals-side">
+      <div class="gs-title">Goals</div>
+      <div id="gsGoals"></div>
+      <button class="gs-add-btn" id="gsAddBtn" onclick="openGoalModal(curMonth)">+ Add a goal</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ DAY PAGE ═══ -->
+<div class="page" id="pgDay">
+  <div class="nav">
+    <button class="nav-back" onclick="navBack('pgMonth','pgDay')">
+      <svg width="9" height="15" viewBox="0 0 9 15" fill="none"><path d="M8 1L1.5 7.5L8 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span id="dBackLbl">Month</span>
+    </button>
+    <div class="nav-center" id="dNavTitle"></div>
+    <div></div>
+  </div>
+  <div class="day-body">
+
+    <div class="tasks-side">
+      <div class="day-banner">
+        <div class="db-left">
+          <div class="db-num" id="dbNum"></div>
+          <div class="db-month" id="dbMonth"></div>
+        </div>
+        <div class="db-right">
+          <div class="db-day" id="dbDay"></div>
+          <div class="db-time-live" id="dbTime"></div>
+        </div>
+      </div>
+      <div class="add-wrap">
+        <input class="add-inp" id="taskInp" placeholder="Add a task for today..."/>
+        <button class="add-go" onclick="addTask()">Add</button>
+      </div>
+      <div class="tasks-card" id="tasksCard"></div>
+    </div>
+
+    <div class="day-goals-panel">
+      <div class="dgp-title">Today's Goals</div>
+      <div id="dgpGoals"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- GOAL MODAL -->
+<div class="shade" id="shade">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheetTitle">New Goal</div>
+    <div class="sf">
+      <label class="sl">Month</label>
+      <select class="ss" id="mmo">
+        <option value="">All year</option>
+        <option value="0">January</option><option value="1">February</option>
+        <option value="2">March</option><option value="3">April</option>
+        <option value="4">May</option><option value="5">June</option>
+        <option value="6">July</option><option value="7">August</option>
+        <option value="8">September</option><option value="9">October</option>
+        <option value="10">November</option><option value="11">December</option>
+      </select>
+    </div>
+    <div class="sf">
+      <label class="sl">Category</label>
+      <select class="ss" id="mcat">
+        <option value="work">💼 Work</option>
+        <option value="personal">🌱 Personal</option>
+        <option value="health">💪 Health</option>
+      </select>
+    </div>
+    <div class="sf">
+      <label class="sl">Goal</label>
+      <input class="si" id="mname" placeholder="What do you want to achieve?"/>
+    </div>
+    <div class="sf">
+      <label class="sl">Progress — <span id="mpv">0</span>%</label>
+      <div class="rr">
+        <input type="range" min="0" max="100" value="0" id="mprog"
+          oninput="document.getElementById('mpv').textContent=this.value;document.getElementById('mpv2').textContent=this.value+'%'"/>
+        <span class="rv" id="mpv2">0%</span>
+      </div>
+    </div>
+    <div class="s-actions">
+      <button class="s-delete" id="sDelete" style="display:none" onclick="deleteGoal()">Delete</button>
+      <button class="s-cancel" onclick="closeShade()">Cancel</button>
+      <button class="s-save" onclick="saveGoal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DN=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const CAT_C={work:'#ff9f0a',personal:'#bf5af2',health:'#34c759'};
+const CAT_L={work:'💼 Work',personal:'🌱 Personal',health:'💪 Health'};
+
+let S={sheetUrl:'',demo:false,goals:[],tasks:{}};
+let curMonth=null,curDay=null,editGId=null;
+let now=new Date();
+
+/* ─── INIT ─── */
+function init(){
+  try{const d=localStorage.getItem('fb5');if(d)S={...S,...JSON.parse(d)};}catch(e){}
+  now=new Date();
+  document.getElementById('yrBig').textContent=now.getFullYear();
+  document.getElementById('ynTitle').textContent='Focus Board '+now.getFullYear();
+  setYear();
+  tick();setInterval(tick,1000);
+  if(S.sheetUrl||S.demo) document.getElementById('setup').classList.add('gone');
+  renderFocus();
+  renderYearGrid();
+  updateStats();
+}
+
+function save(){localStorage.setItem('fb5',JSON.stringify(S));updateStats();}
+
+/* ─── CLOCK ─── */
+function tick(){
+  const n=new Date();
+  const h=String(n.getHours()).padStart(2,'0');
+  const m=String(n.getMinutes()).padStart(2,'0');
+  document.getElementById('cwTime').innerHTML=h+'<span>:'+m+'</span>';
+  document.getElementById('cwDay').textContent=DN[n.getDay()];
+  document.getElementById('cwDate').textContent=n.getDate()+' '+MN[n.getMonth()]+' '+n.getFullYear();
+  // live time on day page
+  const el=document.getElementById('dbTime');
+  if(el) el.textContent=h+':'+m;
+}
+
+/* ─── YEAR PROGRESS ─── */
+function setYear(){
+  const n=new Date();
+  const start=new Date(n.getFullYear(),0,1);
+  const total=n.getFullYear()%4===0?366:365;
+  const day=Math.ceil((n-start)/86400000);
+  const pct=Math.round((day/total)*100);
+  const left=total-day;
+  setTimeout(()=>{
+    document.getElementById('yrFill').style.width=pct+'%';
+    document.getElementById('yrPct').textContent=pct+'%';
+    document.getElementById('yrDays').textContent=left+' days left in '+n.getFullYear();
+  },120);
+}
+
+function updateStats(){
+  document.getElementById('stGoals').textContent=S.goals.length;
+  document.getElementById('stDone').textContent=S.goals.filter(g=>g.progress>=100).length;
+}
+
+/* ─── NAVIGATION ─── */
+function navBack(to,from){
+  const fromEl=document.getElementById(from);
+  fromEl.classList.add('exit-left');
+  setTimeout(()=>{
+    fromEl.classList.remove('active','exit-left');
+    document.getElementById(to).classList.add('active');
+  },320);
+}
+
+function navForward(to){
+  const pages=document.querySelectorAll('.page');
+  const current=[...pages].find(p=>p.classList.contains('active'));
+  if(current){current.classList.remove('active');}
+  const next=document.getElementById(to);
+  next.style.transform='translateX(32px)';
+  next.style.opacity='0';
+  next.classList.add('active');
+  requestAnimationFrame(()=>{
+    next.style.transform='';next.style.opacity='';
+  });
+}
+
+/* ─── YEAR GRID ─── */
+function renderYearGrid(){
+  const n=new Date();
+  const cur=n.getMonth();
+  const grid=document.getElementById('monthsGrid');
+  grid.innerHTML=MN.map((name,i)=>{
+    const goals=goalsForMonth(i);
+    const avg=goals.length?Math.round(goals.reduce((s,g)=>s+(g.progress||0),0)/goals.length):0;
+    const pills=goals.slice(0,2).map(g=>`<div class="mc-pill ${g.category} ${g.progress>=100?'done':''}">${x(g.title)}</div>`).join('');
+    return `<div class="mc ${i===cur?'now':i<cur?'past':''}" onclick="openMonth(${i})">
+      <div class="mc-head">
+        <div class="mc-name">${name}</div>
+        ${goals.length?`<div class="mc-count">${goals.length}</div>`:''}
+      </div>
+      <div class="mc-pills">${pills||`<div class="mc-none">Tap to add</div>`}</div>
+      ${goals.length?`<div class="mc-prog"><div class="mc-prog-fill" style="width:${avg}%"></div></div>`:''}
+    </div>`;
+  }).join('');
+}
+
+/* ─── OPEN MONTH ─── */
+function openMonth(mo){
+  curMonth=mo;
+  now=new Date();
+  const yr=now.getFullYear();
+  const goals=goalsForMonth(mo);
+  const avg=goals.length?Math.round(goals.reduce((s,g)=>s+(g.progress||0),0)/goals.length):0;
+  document.getElementById('mNavTitle').textContent=MN[mo]+' '+yr;
+  document.getElementById('mBackLbl').textContent=yr;
+  document.getElementById('mbMonth').textContent=MN[mo]+' '+yr;
+  document.getElementById('mbSub').textContent=goals.length+' goal'+(goals.length!==1?'s':'')+' · '+goals.filter(g=>g.progress>=100).length+' completed';
+  document.getElementById('mbPct').textContent=goals.length?avg+'%':'—';
+  document.getElementById('gsAddBtn').textContent='+ Add a goal for '+MN[mo];
+  renderCalendar(yr,mo);
+  renderMonthGoals(mo);
+  navForward('pgMonth');
+}
+
+/* ─── CALENDAR ─── */
+function renderCalendar(yr,mo){
+  const n=new Date();
+  const first=new Date(yr,mo,1);
+  const last=new Date(yr,mo+1,0).getDate();
+  let dow=first.getDay(); dow=dow===0?6:dow-1;
+
+  const cells=[];
+  const prevLast=new Date(yr,mo,0).getDate();
+  for(let i=dow-1;i>=0;i--) cells.push({d:prevLast-i,cur:false});
+  for(let d=1;d<=last;d++) cells.push({d,cur:true});
+  const rem=(7-cells.length%7)%7;
+  for(let d=1;d<=rem;d++) cells.push({d,cur:false});
+
+  const weeks=[];
+  for(let i=0;i<cells.length;i+=7) weeks.push(cells.slice(i,i+7));
+
+  document.getElementById('calWeeks').innerHTML=weeks.map(wk=>`
+    <div class="cal-week">${wk.map(c=>{
+      const isToday=c.cur&&c.d===n.getDate()&&mo===n.getMonth()&&yr===n.getFullYear();
+      const key=dKey(yr,mo,c.d);
+      const hasTasks=c.cur&&(S.tasks[key]||[]).length>0;
+      return `<div class="cal-day ${isToday?'today':''} ${!c.cur?'other':''} ${hasTasks?'has-dot':''}"
+        ${c.cur?`onclick="openDay(${yr},${mo},${c.d})"`:''}>
+        <div class="d-num">${c.d}</div>
+      </div>`;
+    }).join('')}</div>
+  `).join('');
+}
+
+/* ─── MONTH GOALS ─── */
+function renderMonthGoals(mo){
+  const goals=goalsForMonth(mo);
+  const el=document.getElementById('gsGoals');
+  if(!goals.length){el.innerHTML='<div style="padding:20px 0;font-size:15px;color:var(--muted);text-align:center">No goals yet for this month</div>';return;}
+  el.innerHTML=goals.map(g=>`
+    <div class="goal-item" onclick="openEditGoal(${g.id})">
+      <div class="gi-top">
+        <div class="gi-dot" style="background:${CAT_C[g.category]||'var(--a)'}"></div>
+        <div class="gi-name ${g.progress>=100?'done':''}">${x(g.title)}</div>
+        <div class="gi-check ${g.progress>=100?'done':''}">${g.progress>=100?'✓':''}</div>
+      </div>
+      <div class="gi-cat">${CAT_L[g.category]||''}</div>
+      <div class="gi-bar">
+        <div class="gi-track"><div class="gi-fill" style="width:${g.progress||0}%;background:${CAT_C[g.category]||'var(--a)'}"></div></div>
+        <div class="gi-pct">${g.progress||0}%</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ─── OPEN DAY ─── */
+function openDay(yr,mo,day){
+  curDay={yr,mo,day};
+  const date=new Date(yr,mo,day);
+  const n=new Date();
+  const h=String(n.getHours()).padStart(2,'0');
+  const m=String(n.getMinutes()).padStart(2,'0');
+  document.getElementById('dNavTitle').textContent=day+' '+MN[mo];
+  document.getElementById('dBackLbl').textContent=MN[mo];
+  document.getElementById('dbNum').textContent=day;
+  document.getElementById('dbMonth').textContent=MN[mo]+' '+yr;
+  document.getElementById('dbDay').textContent=DN[date.getDay()];
+  document.getElementById('dbTime').textContent=h+':'+m;
+  renderDayTasks();
+  renderDayGoals(mo);
+  navForward('pgDay');
+}
+
+/* ─── DAY TASKS ─── */
+function renderDayTasks(){
+  if(!curDay)return;
+  const key=dKey(curDay.yr,curDay.mo,curDay.day);
+  const tasks=S.tasks[key]||[];
+  const card=document.getElementById('tasksCard');
+  if(!tasks.length){
+    card.innerHTML='<div class="tasks-empty">Nothing here yet — add a task above ↑</div>';
+    return;
+  }
+  card.innerHTML=tasks.map((t,i)=>`
+    <div class="task-row" onclick="toggleTask(${i})">
+      <div class="tc ${t.done?'on':''}">${t.done?'✓':''}</div>
+      <div class="tl ${t.done?'done':''}">${x(t.text)}</div>
+      <button class="tdel" onclick="event.stopPropagation();deleteTask(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function renderDayGoals(mo){
+  const goals=goalsForMonth(mo);
+  const el=document.getElementById('dgpGoals');
+  if(!goals.length){el.innerHTML='<div style="padding:16px 0;font-size:15px;color:var(--muted)">No goals for this month</div>';return;}
+  el.innerHTML=goals.map(g=>`
+    <div class="goal-item" onclick="openEditGoal(${g.id})">
+      <div class="gi-top">
+        <div class="gi-dot" style="background:${CAT_C[g.category]||'var(--a)'}"></div>
+        <div class="gi-name ${g.progress>=100?'done':''}">${x(g.title)}</div>
+        <div class="gi-check ${g.progress>=100?'done':''}">${g.progress>=100?'✓':''}</div>
+      </div>
+      <div class="gi-cat">${CAT_L[g.category]||''}</div>
+      <div class="gi-bar">
+        <div class="gi-track"><div class="gi-fill" style="width:${g.progress||0}%;background:${CAT_C[g.category]||'var(--a)'}"></div></div>
+        <div class="gi-pct">${g.progress||0}%</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addTask(){
+  if(!curDay)return;
+  const inp=document.getElementById('taskInp');
+  const val=inp.value.trim();if(!val)return;
+  const key=dKey(curDay.yr,curDay.mo,curDay.day);
+  S.tasks[key]=S.tasks[key]||[];
+  S.tasks[key].push({text:val,done:false});
+  inp.value='';save();renderDayTasks();
+  renderCalendar(curDay.yr,curDay.mo);
+  toast('Task added ✓');
+}
+function toggleTask(i){
+  const key=dKey(curDay.yr,curDay.mo,curDay.day);
+  S.tasks[key][i].done=!S.tasks[key][i].done;
+  save();renderDayTasks();
+}
+function deleteTask(i){
+  const key=dKey(curDay.yr,curDay.mo,curDay.day);
+  S.tasks[key].splice(i,1);
+  save();renderDayTasks();
+}
+
+/* ─── GOAL MODAL ─── */
+function openGoalModal(mo){
+  editGId=null;
+  document.getElementById('sheetTitle').textContent='New Goal';
+  document.getElementById('mmo').value=mo!==null&&mo!==undefined?mo:'';
+  document.getElementById('mcat').value='work';
+  document.getElementById('mname').value='';
+  document.getElementById('mprog').value=0;
+  document.getElementById('mpv').textContent='0';
+  document.getElementById('mpv2').textContent='0%';
+  document.getElementById('sDelete').style.display='none';
+  document.getElementById('shade').classList.add('open');
+}
+function openEditGoal(id){
+  const g=S.goals.find(g=>g.id===id);if(!g)return;
+  editGId=id;
+  document.getElementById('sheetTitle').textContent='Edit Goal';
+  document.getElementById('mmo').value=g.month!=null&&g.month!==''?g.month:'';
+  document.getElementById('mcat').value=g.category||'work';
+  document.getElementById('mname').value=g.title;
+  document.getElementById('mprog').value=g.progress||0;
+  document.getElementById('mpv').textContent=g.progress||0;
+  document.getElementById('mpv2').textContent=(g.progress||0)+'%';
+  document.getElementById('sDelete').style.display='block';
+  document.getElementById('shade').classList.add('open');
+}
+function saveGoal(){
+  const title=document.getElementById('mname').value.trim();
+  if(!title){toast('Add a goal title');return;}
+  const moV=document.getElementById('mmo').value;
+  const d={title,category:document.getElementById('mcat').value,month:moV===''?null:parseInt(moV),progress:parseInt(document.getElementById('mprog').value)};
+  if(editGId){const g=S.goals.find(g=>g.id===editGId);if(g)Object.assign(g,d);}
+  else S.goals.push({id:Date.now(),...d});
+  save();closeShade();
+  renderYearGrid();
+  if(curMonth!==null){renderMonthGoals(curMonth);renderCalendar(new Date().getFullYear(),curMonth);}
+  if(curDay){renderDayGoals(curDay.mo);}
+  toast('Saved ✓');
+}
+function deleteGoal(){
+  if(!editGId)return;
+  S.goals=S.goals.filter(g=>g.id!==editGId);
+  save();closeShade();
+  renderYearGrid();
+  if(curMonth!==null){renderMonthGoals(curMonth);}
+  toast('Deleted');
+}
+function closeShade(){document.getElementById('shade').classList.remove('open');}
+document.getElementById('shade').addEventListener('click',e=>{if(e.target===document.getElementById('shade'))closeShade();});
+
+/* ─── FOCUS ─── */
+function renderFocus(){
+  if(!S.focus)return;
+  document.getElementById('fwText').textContent=S.focus;
+  document.getElementById('fwRow').style.display='none';
+  document.getElementById('fwEdit').style.display='block';
+}
+function setFocus(){
+  const v=document.getElementById('fwIn').value.trim();if(!v)return;
+  S.focus=v;save();
+  document.getElementById('fwText').textContent=v;
+  document.getElementById('fwRow').style.display='none';
+  document.getElementById('fwEdit').style.display='block';
+  toast('Focus set ✓');
+}
+function editFocus(){
+  document.getElementById('fwIn').value=S.focus;
+  document.getElementById('fwRow').style.display='flex';
+  document.getElementById('fwEdit').style.display='none';
+}
+
+/* ─── SETUP ─── */
+function connectSheet(){
+  const url=document.getElementById('sheetUrl').value.trim();
+  if(!url){toast('Paste your Script URL');return;}
+  S.sheetUrl=url;save();
+  document.getElementById('setup').classList.add('gone');
+  toast('Connected ✓');
+}
+function loadDemo(){
+  S.demo=true;
+  const n=new Date();
+  const mo=n.getMonth();
+  const yr=n.getFullYear();
+  S.goals=[
+    {id:1,title:'Launch portfolio site',category:'work',month:mo,progress:65},
+    {id:2,title:'Complete client rebrand',category:'work',month:mo,progress:40},
+    {id:3,title:'Read 12 books',category:'personal',month:null,progress:25},
+    {id:4,title:'Run a 5K',category:'health',month:(mo+1)%12,progress:50},
+    {id:5,title:'Learn watercolour',category:'personal',month:(mo+2)%12,progress:10},
+    {id:6,title:'Q2 strategy deck',category:'work',month:(mo+1)%12,progress:80},
+    {id:7,title:'Digital detox week',category:'health',month:(mo+3)%12,progress:0},
+    {id:8,title:'Visit family',category:'personal',month:(mo+4)%12,progress:0},
+  ];
+  const k=dKey(yr,mo,n.getDate());
+  S.tasks[k]=[
+    {text:'Review design mockups',done:true},
+    {text:'Call with client at 3pm',done:false},
+    {text:'Go for a 30 min walk',done:false},
+  ];
+  S.focus='Ship the portfolio site before end of month';
+  save();
+  document.getElementById('setup').classList.add('gone');
+  renderFocus();renderYearGrid();updateStats();
+  toast('Demo loaded — tap any month to explore!');
+}
+
+/* ─── SYNC ─── */
+async function syncSheets(){
+  if(!S.sheetUrl&&!S.demo){toast('Connect Google Sheets first');return;}
+  if(S.demo){toast('Demo mode — connect Sheets to save for real!');return;}
+  try{
+    await fetch(S.sheetUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({...S,syncedAt:new Date().toISOString()})});
+    toast('Synced to Sheets ✓');
+  }catch(e){toast('Sync failed — check your URL');}
+}
+
+/* ─── UTILS ─── */
+function goalsForMonth(mo){
+  return S.goals.filter(g=>g.month===mo||g.month===null||g.month===undefined||g.month==='');
+}
+function dKey(yr,mo,d){return yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
+function x(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+let tt;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2500);
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    if(document.activeElement.id==='taskInp')addTask();
+    if(document.activeElement.id==='fwIn')setFocus();
+  }
+  if(e.key==='Escape')closeShade();
+});
+
+init();
+</script>
+</body>
+</html>
