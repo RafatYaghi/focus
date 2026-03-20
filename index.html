@@ -595,7 +595,13 @@ html,body{
   <div class="nav">
     <div></div>
     <div class="nav-center" id="ynTitle">Focus Board</div>
-    <button class="nav-action" onclick="openGoalModal(null)">+ Goal</button>
+    <div style="display:flex;align-items:center;gap:14px">
+      <button class="nav-action" id="syncBtn" onclick="syncSheets()" style="color:var(--muted);font-size:13px;font-weight:500;display:flex;align-items:center;gap:5px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        <span id="syncLbl">Sync</span>
+      </button>
+      <button class="nav-action" onclick="openGoalModal(null)">+ Goal</button>
+    </div>
   </div>
   <div class="year-layout">
 
@@ -660,7 +666,13 @@ html,body{
       <span id="mBackLbl">Year</span>
     </button>
     <div class="nav-center" id="mNavTitle"></div>
-    <button class="nav-action" onclick="openGoalModal(curMonth)">+ Goal</button>
+    <div style="display:flex;align-items:center;gap:14px">
+      <button class="nav-action" onclick="syncSheets()" style="color:var(--muted);font-size:13px;font-weight:500;display:flex;align-items:center;gap:5px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        Sync
+      </button>
+      <button class="nav-action" onclick="openGoalModal(curMonth)">+ Goal</button>
+    </div>
   </div>
   <div class="month-body">
 
@@ -703,7 +715,10 @@ html,body{
       <span id="dBackLbl">Month</span>
     </button>
     <div class="nav-center" id="dNavTitle"></div>
-    <div></div>
+    <button class="nav-action" onclick="syncSheets()" style="color:var(--muted);font-size:13px;font-weight:500;display:flex;align-items:center;gap:5px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+      Sync
+    </button>
   </div>
   <div class="day-body">
 
@@ -786,7 +801,7 @@ const DN=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'
 const CAT_C={work:'#ff9f0a',personal:'#bf5af2',health:'#34c759'};
 const CAT_L={work:'💼 Work',personal:'🌱 Personal',health:'💪 Health'};
 
-let S={sheetUrl:'https://script.google.com/macros/s/AKfycbwTy823ElmpJTZCgCi3C6Q21BtN6DQFz-3i-epVvnAxW5Q5tH_SeEHSZ9B_z7kqFfp3/exec',demo:false,goals:[],tasks:{}};
+let S={sheetUrl:'',demo:false,goals:[],tasks:{}};
 let curMonth=null,curDay=null,editGId=null;
 let now=new Date();
 
@@ -1138,14 +1153,25 @@ function loadDemo(){
 }
 
 /* ─── SYNC ─── */
-async function syncSheets(){
-  if(!S.sheetUrl&&!S.demo){toast('Connect Google Sheets first');return;}
-  if(S.demo){toast('Demo mode — connect Sheets to save for real!');return;}
+async function syncSheets(silent){
+  if(!S.sheetUrl&&!S.demo){toast('No Sheets URL — open Settings to connect');return;}
+  if(S.demo){if(!silent)toast('Demo mode — connect Google Sheets to save for real!');return;}
+  const lbl=document.getElementById('syncLbl');
+  if(lbl)lbl.textContent='Syncing…';
   try{
     await fetch(S.sheetUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({...S,syncedAt:new Date().toISOString()})});
-    toast('Synced to Sheets ✓');
-  }catch(e){toast('Sync failed — check your URL');}
+    const t=new Date();
+    const ts=String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');
+    if(lbl)lbl.textContent='Synced '+ts;
+    if(!silent)toast('Saved to Google Sheets ✓');
+    setTimeout(()=>{if(lbl)lbl.textContent='Sync';},8000);
+  }catch(e){
+    if(lbl)lbl.textContent='Sync';
+    if(!silent)toast('Sync failed — check your URL in setup');
+  }
 }
+/* auto-sync every 3 minutes */
+setInterval(()=>syncSheets(true), 3*60*1000);
 
 /* ─── UTILS ─── */
 function goalsForMonth(mo){
